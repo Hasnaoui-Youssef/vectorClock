@@ -4,18 +4,19 @@ import org.hynaf.Core.Messages.Message;
 
 import java.util.function.Consumer;
 
-public class HandleReceivedMessage implements Task {
+public class HandleReceivedMessage implements Task<Message> {
     private final Message msg;
-    private final Consumer<Message> handler;
-    public static final Task.Type taskType = () -> Type.TaskType.HANDLE_RECEIVED_MESSAGE;
-    public HandleReceivedMessage(Message msg, Consumer<Message> handler) {
+
+    @Override
+    public TaskType getType(){
+       return TaskType.HANDLE_RECEIVED_MESSAGE;
+    }
+    public HandleReceivedMessage(Message msg) {
         this.msg = msg;
-        this.handler = handler;
     }
-    public Message getMessage() {
+
+    @Override
+    public Message execute(){
         return msg;
-    }
-    public void execute(){
-        handler.accept(msg);
     }
 }

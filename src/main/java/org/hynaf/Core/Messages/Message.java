@@ -13,6 +13,6 @@ public sealed interface Message extends Serializable
     }
     String getSource();
     String getDestination();
-    Map<Integer, Integer> getTimeStamp();
+    Map<String, Integer> getTimeStamp();
     String getMessageId();
 }

@@ -31,7 +31,7 @@ public record AppMessage(
         return dest;
     }
 
-    public Map<Integer, Integer> getTimeStamp(){
+    public Map<String, Integer> getTimeStamp(){
         return vClock.toMap();
     }
 

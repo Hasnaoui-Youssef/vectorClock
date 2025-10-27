@@ -4,27 +4,50 @@ import org.hynaf.Core.Messages.Message;
 import org.hynaf.Core.ProcessNode;
 import org.hynaf.Core.Task.HandleReceivedMessage;
 
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-public class ReceivingBuffer {
-    private final int hostProcessId;
-    private final int targetProcessId;
-    private final BlockingQueue<Message> queue;
+public class ReceivingBuffer implements Runnable {
+    private final ProcessNode hostProcess;
+    private final Queue<Message> queue;
+    private AtomicBoolean running;
+    private final Thread runningThread;
 
-    private final ProcessNode hostNode;
-
-    public ReceivingBuffer(ProcessNode hostNode, int targetProcessId) {
-        this.hostNode = hostNode;
-        this.hostProcessId = hostNode.getPid();
-        this.targetProcessId = targetProcessId;
-        this.queue = new LinkedBlockingQueue<>();
+    public ReceivingBuffer(ProcessNode hostNode) {
+        this.hostProcess = hostNode;
+        this.queue = new ConcurrentLinkedQueue<>();
+        this.runningThread = new Thread(this);
+        this.running = new AtomicBoolean(true);
     }
 
-    public void onReceiveMessage(Message message, Consumer<Message> handler) {
+    public void receiveMessage(Message message) {
         queue.offer(message);
-        hostNode.enqueueTask(new HandleReceivedMessage(message, handler));
+    }
+
+    public void start() {
+        runningThread.setDaemon(true);
+        runningThread.start();
+    }
+    public synchronized void stop() {
+       this.running.set(false);
+       runningThread.interrupt();
+    }
+
+    @Override
+    public void run() {
+        while(running.get()) {
+           Message message = queue.poll();
+           if(message == null) continue;
+           this.hostProcess.receiveMessage(message);
+        }
+    }
+
+    public String getHostProcessID() {
+        return this.hostProcess.getPid();
     }
 
 }

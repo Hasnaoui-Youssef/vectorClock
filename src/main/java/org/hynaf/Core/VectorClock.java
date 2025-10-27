@@ -7,16 +7,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class VectorClock {
-    private final Map<Integer, Integer> clock;
-    private final int pid;
+    private final Map<String, Integer> clock;
+    private final String pid;
 
 
-    public VectorClock(int pid, int size) {
+    public VectorClock(String pid, int size) {
         this.pid = pid;
         this.clock = new ConcurrentHashMap<>();
         this.clock.put(pid, size);
     }
-    public VectorClock(int pid) {
+    public VectorClock(String pid) {
         this.pid = pid;
         this.clock = new ConcurrentHashMap<>();
         this.clock.put(pid, 0);
@@ -27,13 +27,13 @@ public class VectorClock {
         return copy;
     }
 
-    public synchronized Integer getProcessorTick(int id) {
+    public synchronized Integer getProcessorTick(String id) {
         return clock.get(id);
     }
     public synchronized int size() {
         return clock.size();
     }
-    public Integer getProcessorID(){
+    public String getProcessorID(){
        return this.pid;
     }
 
@@ -41,7 +41,7 @@ public class VectorClock {
         clock.put(pid, clock.get(pid) + 1);
     }
     public synchronized void update(VectorClock other){
-        for(Map.Entry<Integer, Integer> entry : other.clock.entrySet()) {
+        for(Map.Entry<String, Integer> entry : other.clock.entrySet()) {
             clock.put(
                     entry.getKey(),
                     Math.max(clock.getOrDefault(entry.getKey(), 0), entry.getValue())
@@ -50,8 +50,8 @@ public class VectorClock {
     }
     public synchronized boolean happenedBefore(VectorClock other) {
         boolean strictlyLess = false;
-        for(Map.Entry<Integer, Integer> entry : this.clock.entrySet()) {
-            int process = entry.getKey();
+        for(Map.Entry<String, Integer> entry : this.clock.entrySet()) {
+            String process = entry.getKey();
             int timeStamp = entry.getValue();
             int otherTime = other.clock.getOrDefault(process, 0);
             if(timeStamp > otherTime) {
@@ -61,8 +61,8 @@ public class VectorClock {
                 strictlyLess = true;
             }
         }
-        for (Map.Entry<Integer, Integer> entry : other.clock.entrySet()) {
-            int process = entry.getKey();
+        for (Map.Entry<String, Integer> entry : other.clock.entrySet()) {
+            String process = entry.getKey();
             if(!clock.containsKey(process) && entry.getValue() > 0){
                 strictlyLess = true;
                 break;
@@ -74,8 +74,13 @@ public class VectorClock {
         return !this.happenedBefore(other) && !other.happenedBefore(this);
     }
 
-    public Map<Integer, Integer> toMap(){
+    public Map<String, Integer> toMap(){
         return new HashMap<>(this.clock);
+    }
+
+    public VectorClock(String pid, Map<String, Integer> vclock){
+       this.pid = pid;
+       this.clock = new ConcurrentHashMap<>(vclock);
     }
 
     @Override
@@ -90,7 +95,7 @@ public class VectorClock {
     @Override
     public synchronized int hashCode(){
        int clockHash = clock.hashCode();
-       int[] hashable = {clockHash, pid};
+       String[] hashable = {""+clockHash, pid};
        return Arrays.hashCode(hashable);
     }
 
